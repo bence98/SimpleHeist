@@ -1,16 +1,16 @@
 locale:
-  - err_compass_fullinv: §4You don't have room in your inventory for the compass. Free up a slot and use '/heist compass'.
-  - err_cop_heist: §4Cops can't perform a heist!
-  - err_heist_exists: §4There's already a heist on the server!
-  - err_no_cops: §4Not enough cops online! (needed {} but only {} online)
-  - err_cooldown: §4You must wait {}m {}s to perform a new heist!
-  - msg_heist_start: §cA heist has started!
-  - msg_heist_end: §cThe heist has ended!
-  - msg_heist_success: §bHeist successful!
-  - msg_ready: Ready to raid
-  - msg_cooldown: Wait {}m {}s
-  - err_not_player: Cannot give compass to the console!
-  - err_not_cop: §4You're not a cop!
-  - err_not_admin: §4You're not an admin!
-  - desc_compass: §c/heist compass - Gives you a compass (cops only)
-  - desc_stop: §c/heist stop - Stops the current heist (admin only)
+  err_compass_fullinv: §4You don't have room in your inventory for the compass. Free up a slot and use '/heist compass'.
+  err_cop_heist: §4Cops can't perform a heist!
+  err_heist_exists: §4There's already a heist on the server!
+  err_no_cops: §4Not enough cops online! (needed {} but only {} online)
+  err_cooldown: §4You must wait {}m {}s to perform a new heist!
+  msg_heist_start: §cA heist has started!
+  msg_heist_end: §cThe heist has ended!
+  msg_heist_success: §bHeist successful!
+  msg_ready: Ready to raid
+  msg_cooldown: Wait {}m {}s
+  err_not_player: Cannot give compass to the console!
+  err_not_cop: §4You're not a cop!
+  err_not_admin: §4You're not an admin!
+  desc_compass: §c/heist compass - Gives you a compass (cops only)
+  desc_stop: §c/heist stop - Stops the current heist (admin only)

@@ -1,0 +1,22 @@
+name: SimpleHeist
+version: 1.0.0
+api-version: 1.14
+description: Adds a simple Cops vs Robbers PvP game via the [Heist] sign
+author: CsokiCraft
+main: csokicraft.bukkit.heist.SimpleHeist
+commands:
+  heist:
+    description: Main SimpleHeist command
+    permission: csokicraft.heist.cop
+    usage: <command> (help|compass|stop)
+permissions:
+  csokicraft.heist.*:
+    children:
+      csokicraft.heist.cop: true
+      csokicraft.heist.admin: true
+  csokicraft.heist.cop:
+    description: Registers the player as a cop
+    default: op
+  csokicraft.heist.admin:
+    description: Allows administering the SimpleHeist game (i.e. stopping stuck heists, etc.)
+    default: op

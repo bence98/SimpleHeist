@@ -1,6 +1,5 @@
 package csokicraft.bukkit.heist;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -12,17 +11,22 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Sign;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType.PrimitivePersistentDataType;
+//import org.bukkit.persistence.PersistentDataType.PrimitivePersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
-public class SimpleHeist extends JavaPlugin{
+public class SimpleHeist extends JavaPlugin implements Listener{
 	/* Config variables */
 	/** List of weapon items */
 	protected List<ItemStack> weaponsRegistry;
@@ -44,6 +48,7 @@ public class SimpleHeist extends JavaPlugin{
 	@Override
 	public void onEnable(){
 		super.onEnable();
+		getServer().getPluginManager().registerEvents(this, this);
 		HEIST_ITEM=new NamespacedKey(this, "heist_item");
 		
 		var cfg=getConfig();
@@ -58,6 +63,7 @@ public class SimpleHeist extends JavaPlugin{
 		}
 	}
 	
+	@EventHandler
 	public void onSignCreated(SignChangeEvent e){
 		var b=e.getBlock();
 		if(isSign(b.getType()))
@@ -72,17 +78,49 @@ public class SimpleHeist extends JavaPlugin{
 			e.setLine(0, "§4§k[Heist]");
 	}
 	
+	@EventHandler
 	public void onSignClicked(PlayerInteractEvent e){
 		if(!e.getAction().equals(Action.RIGHT_CLICK_BLOCK)||!isSign(e.getClickedBlock().getType()))
 			return;
-		Sign s=(Sign) e.getClickedBlock().getBlockData();
+		Sign s=(Sign) e.getClickedBlock().getState();
 		if(!"§2§k[Heist]".equals(s.getLine(0)))
 			return;
 		startHeist(e.getPlayer(), s);
 	}
 	
+	@EventHandler
 	public void onPlayerJoined(PlayerJoinEvent e){
 		removeCompass(e.getPlayer());
+	}
+	
+	@Override
+	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+		if(!"heist".equalsIgnoreCase(label))
+			return super.onCommand(sender, command, label, args);
+		
+		if(args.length<1)
+			return false;
+		
+		switch (args[0]){
+		case "help":
+			sender.sendMessage(SimpleHeist.getInstance().__("desc_compass"));
+			sender.sendMessage(SimpleHeist.getInstance().__("desc_stop"));
+			return true;
+		case "compass":
+			if(sender instanceof Player)
+				SimpleHeist.getInstance().giveCompass((Player) sender);
+			else
+				sender.sendMessage(SimpleHeist.getInstance().__("err_not_player"));
+			return true;
+		case "stop":
+			if(!sender.hasPermission("csokicraft.heist.admin")){
+				sender.sendMessage(SimpleHeist.getInstance().__("err_not_admin"));
+				return true;
+			}
+			SimpleHeist.getInstance().endHeist();
+		default:
+			return false;
+		}
 	}
 	
 	//TODO: cooldown tick
@@ -90,7 +128,7 @@ public class SimpleHeist extends JavaPlugin{
 	/* Game logic */
 	/** Heist compass */
 	public void giveCompass(Player p){
-		if(!p.hasPermission("simpleheist.cop")){
+		if(!p.hasPermission("csokicraft.heist.cop")){
 			p.sendMessage(__("err_not_cop"));
 			return;
 		}
@@ -100,7 +138,8 @@ public class SimpleHeist extends JavaPlugin{
 		}
 		ItemStack compass=new ItemStack(Material.COMPASS);
 		var meta=compass.getItemMeta();
-		meta.getPersistentDataContainer().set(HEIST_ITEM, PrimitivePersistentDataType.INTEGER, 1);
+		//meta.getPersistentDataContainer().set(HEIST_ITEM, PrimitivePersistentDataType.INTEGER, 1);
+		meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
 		compass.setItemMeta(meta);
 		i.addItem(compass);
 		p.setCompassTarget(heist.loc);
@@ -111,7 +150,8 @@ public class SimpleHeist extends JavaPlugin{
 		var i=p.getInventory();
 		var it=i.iterator();
 		for(var is=it.next();it.hasNext();is=it.next()){
-			if(is.getItemMeta().getPersistentDataContainer().get(HEIST_ITEM, PrimitivePersistentDataType.INTEGER)==1)
+			//if(is.getItemMeta().getPersistentDataContainer().get(HEIST_ITEM, PrimitivePersistentDataType.INTEGER)==1)
+			if(is.getItemMeta().hasItemFlag(ItemFlag.HIDE_UNBREAKABLE))
 				it.remove();
 		}
 	}
@@ -122,7 +162,7 @@ public class SimpleHeist extends JavaPlugin{
 			getLogger().log(Level.WARNING, "No heist type: "+s.getLine(2));
 			return;
 		}
-		if(p.hasPermission("simpleheist.cop")){
+		if(p.hasPermission("csokicraft.heist.cop")){
 			p.sendMessage(__("err_cop_heist"));
 			return;
 		}
@@ -131,7 +171,7 @@ public class SimpleHeist extends JavaPlugin{
 			return;
 		}
 		//TODO: check cooldown
-		var cops=Bukkit.getServer().getOnlinePlayers().stream().filter((q)->{return q.hasPermission("simpleheist.cop");}).collect(Collectors.toList());
+		var cops=Bukkit.getServer().getOnlinePlayers().stream().filter((q)->{return q.hasPermission("csokicraft.heist.cop");}).collect(Collectors.toList());
 		if(cops.size()<nrCops){
 			p.sendMessage(String.format(__("err_no_cops"), nrCops, cops));
 			return;
@@ -146,7 +186,7 @@ public class SimpleHeist extends JavaPlugin{
 	}
 	
 	public void endHeist(){
-		Bukkit.getServer().getOnlinePlayers().stream().filter((q)->{return q.equals(heist.player)||q.hasPermission("simpleheist.cop");}).forEach((p)->{
+		Bukkit.getServer().getOnlinePlayers().stream().filter((q)->{return q.equals(heist.player)||q.hasPermission("csokicraft.heist.cop");}).forEach((p)->{
 			p.sendMessage(__("msg_heist_end"));
 			removeCompass(p);
 		});
@@ -165,7 +205,7 @@ public class SimpleHeist extends JavaPlugin{
 	@SuppressWarnings("deprecation")
 	private boolean isSign(Material type){
 		for(Material mat:new Material[]{
-				//*
+				/*
 				Material.ACACIA_SIGN, Material.ACACIA_WALL_SIGN,
 				Material.BIRCH_SIGN, Material.BIRCH_WALL_SIGN,
 				Material.DARK_OAK_SIGN, Material.DARK_OAK_WALL_SIGN,
@@ -174,7 +214,7 @@ public class SimpleHeist extends JavaPlugin{
 				Material.OAK_SIGN, Material.OAK_WALL_SIGN,
 				Material.SPRUCE_SIGN, Material.SPRUCE_WALL_SIGN,
 				//*/
-				//Material.SIGN, Material.SIGN_POST, Material.WALL_SIGN
+				Material.SIGN, Material.SIGN_POST, Material.WALL_SIGN
 			})
 			if(mat.equals(type))
 				return true;

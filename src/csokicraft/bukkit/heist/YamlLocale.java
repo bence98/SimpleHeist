@@ -25,11 +25,11 @@ public class YamlLocale{
 			InputStream in=plugin.getResource(lang+".yaml");
 			if(in==null)
 				in=plugin.getResource("en.yaml");
-			var cfg=new YamlConfiguration();
+			YamlConfiguration cfg=new YamlConfiguration();
 			cfg.load(new InputStreamReader(in, "UTF-8"));
 			return new YamlLocale(cfg, f).save();
 		}
-		var cfg=new YamlConfiguration();
+		YamlConfiguration cfg=new YamlConfiguration();
 		cfg.load(f);
 		return new YamlLocale(cfg, f);
 	}
@@ -39,7 +39,7 @@ public class YamlLocale{
 	}
 	
 	public YamlLocale save() throws IOException{
-		var cfg=new YamlConfiguration();
+		YamlConfiguration cfg=new YamlConfiguration();
 		cfg.set("locale", trs);
 		cfg.save(cfgFile);
 		return this;

@@ -20,7 +20,7 @@ public class HeistThread implements Runnable{
 	public void run(){
 		if(player.getLocation().distance(loc)>SimpleHeist.getInstance().radius)
 			SimpleHeist.getInstance().endHeist();
-		else if(duration>=reward.difficulty){
+		else if(duration>=reward.difficulty*4){
 			player.sendMessage(SimpleHeist.getInstance().__("msg_heist_success"));
 			reward.giveTo(player);
 			SimpleHeist.getInstance().endHeist();

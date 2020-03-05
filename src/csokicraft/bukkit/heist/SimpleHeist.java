@@ -2,17 +2,21 @@ package csokicraft.bukkit.heist;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -22,6 +26,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 //import org.bukkit.persistence.PersistentDataType.PrimitivePersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -35,12 +41,12 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	/** How far you can get before the heist is cancelled? */
 	protected int radius;
 	/** Target types and rewards */
-	protected Map<String, HeistReward> types=new HashMap<>();
+	protected Map<String, Object> types=new HashMap<>();
 
 	/* Internal variables */
 	protected NamespacedKey HEIST_ITEM;
 	protected HeistThread heist;
-	protected BukkitTask task;
+	protected int task;
 	
 	private YamlLocale i18n;
 	
@@ -48,14 +54,17 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	@Override
 	public void onEnable(){
 		super.onEnable();
+		ConfigurationSerialization.registerClass(HeistReward.class);
+		saveDefaultConfig();
+		
 		getServer().getPluginManager().registerEvents(this, this);
 		HEIST_ITEM=new NamespacedKey(this, "heist_item");
 		
-		var cfg=getConfig();
+		FileConfiguration cfg=getConfig();
 		weaponsRegistry=(List<ItemStack>) cfg.getList("weapons", Collections.emptyList());
 		nrCops=cfg.getInt("cops", 3);
 		radius=cfg.getInt("radius", 5);
-		//cfg.getConfigurationSection("raidTypes");
+		types=cfg.getConfigurationSection("raidTypes").getValues(false);
 		try{
 			i18n=YamlLocale.getLocale(cfg.getString("lang"), this);
 		}catch (Exception e){
@@ -65,17 +74,14 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	
 	@EventHandler
 	public void onSignCreated(SignChangeEvent e){
-		var b=e.getBlock();
-		if(isSign(b.getType()))
-			return;
-		if(!"[Heist]".equals(e.getLine(0))&&!"§2§k[Heist]".equals(e.getLine(0))&&!"§4§k[Heist]".equals(e.getLine(0)))
+		if(!"[Heist]".equals(e.getLine(0))&&!("§2"+ChatColor.BOLD+"[Heist]").equals(e.getLine(0))&&!("§4"+ChatColor.BOLD+"[Heist]").equals(e.getLine(0)))
 			return;
 		if(types.containsKey(e.getLine(1))){
-			e.setLine(0, "§2§k[Heist]");
+			e.setLine(0, ("§2"+ChatColor.BOLD+"[Heist]"));
 			//TODO: cooldown display
 			e.setLine(2, __("msg_ready"));
 		}else
-			e.setLine(0, "§4§k[Heist]");
+			e.setLine(0, ("§4"+ChatColor.BOLD+"[Heist]"));
 	}
 	
 	@EventHandler
@@ -83,7 +89,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 		if(!e.getAction().equals(Action.RIGHT_CLICK_BLOCK)||!isSign(e.getClickedBlock().getType()))
 			return;
 		Sign s=(Sign) e.getClickedBlock().getState();
-		if(!"§2§k[Heist]".equals(s.getLine(0)))
+		if(!("§2"+ChatColor.BOLD+"[Heist]").equals(s.getLine(0)))
 			return;
 		startHeist(e.getPlayer(), s);
 	}
@@ -118,6 +124,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 				return true;
 			}
 			SimpleHeist.getInstance().endHeist();
+			return true;
 		default:
 			return false;
 		}
@@ -128,16 +135,19 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	/* Game logic */
 	/** Heist compass */
 	public void giveCompass(Player p){
+		if(heist==null)
+			return;
+		
 		if(!p.hasPermission("csokicraft.heist.cop")){
 			p.sendMessage(__("err_not_cop"));
 			return;
 		}
-		var i=p.getInventory();
+		PlayerInventory i=p.getInventory();
 		if(i.firstEmpty()<0){
 			p.sendMessage(__("err_compass_fullinv"));
 		}
 		ItemStack compass=new ItemStack(Material.COMPASS);
-		var meta=compass.getItemMeta();
+		ItemMeta meta=compass.getItemMeta();
 		//meta.getPersistentDataContainer().set(HEIST_ITEM, PrimitivePersistentDataType.INTEGER, 1);
 		meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
 		compass.setItemMeta(meta);
@@ -147,9 +157,11 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	}
 	
 	public void removeCompass(Player p){
-		var i=p.getInventory();
-		var it=i.iterator();
-		for(var is=it.next();it.hasNext();is=it.next()){
+		PlayerInventory i=p.getInventory();
+		Iterator<ItemStack> it=i.iterator();
+		for(ItemStack is=it.next();it.hasNext();is=it.next()){
+			if(is==null||!is.hasItemMeta())
+				continue;
 			//if(is.getItemMeta().getPersistentDataContainer().get(HEIST_ITEM, PrimitivePersistentDataType.INTEGER)==1)
 			if(is.getItemMeta().hasItemFlag(ItemFlag.HIDE_UNBREAKABLE))
 				it.remove();
@@ -157,7 +169,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	}
 	
 	public void startHeist(Player p, Sign s){
-		var reward=types.get(s.getLine(2));
+		HeistReward reward=(HeistReward) types.get(s.getLine(1));
 		if(reward==null){
 			getLogger().log(Level.WARNING, "No heist type: "+s.getLine(2));
 			return;
@@ -171,26 +183,30 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 			return;
 		}
 		//TODO: check cooldown
-		var cops=Bukkit.getServer().getOnlinePlayers().stream().filter((q)->{return q.hasPermission("csokicraft.heist.cop");}).collect(Collectors.toList());
+		List<? extends Player> cops=Bukkit.getServer().getOnlinePlayers().stream().filter((q)->{return q.hasPermission("csokicraft.heist.cop");}).collect(Collectors.toList());
 		if(cops.size()<nrCops){
-			p.sendMessage(String.format(__("err_no_cops"), nrCops, cops));
+			p.sendMessage(String.format(__("err_no_cops"), nrCops, cops.size()));
 			return;
 		}
 		//TODO: check for weapon
-		for(var cop:cops){
+		heist=new HeistThread(p, s.getLocation(), reward);
+		for(Player cop:cops){
 			cop.sendMessage(__("msg_heist_start"));
 			giveCompass(cop);
 		}
-		heist=new HeistThread(p, s.getLocation(), reward);
-		task=Bukkit.getServer().getScheduler().runTask(this, heist);
+		task=Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(this, heist, 0, 5);
 	}
 	
 	public void endHeist(){
+		if(heist==null)
+			return;
+		
 		Bukkit.getServer().getOnlinePlayers().stream().filter((q)->{return q.equals(heist.player)||q.hasPermission("csokicraft.heist.cop");}).forEach((p)->{
 			p.sendMessage(__("msg_heist_end"));
 			removeCompass(p);
 		});
-		task.cancel();
+		Bukkit.getServer().getScheduler().cancelTask(task);
+		heist=null;
 	}
 
 	/* Misc functions */

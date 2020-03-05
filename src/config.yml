@@ -1,1 +1,12 @@
 lang: en
+raidTypes:
+  Shop:
+    ==: csokicraft.bukkit.heist.HeistReward
+    difficulty: 5
+    rewards:
+      ? ==: org.bukkit.inventory.ItemStack
+        type: STICK
+      : 75
+      ? ==: org.bukkit.inventory.ItemStack
+        type: DIAMOND
+      : 25

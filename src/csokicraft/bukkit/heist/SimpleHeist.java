@@ -1,5 +1,6 @@
 package csokicraft.bukkit.heist;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -158,14 +159,16 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	
 	public void removeCompass(Player p){
 		PlayerInventory i=p.getInventory();
-		Iterator<ItemStack> it=i.iterator();
-		for(ItemStack is=it.next();it.hasNext();is=it.next()){
+		List<ItemStack> toRm=new ArrayList<>();
+		for(ItemStack is:i){
 			if(is==null||!is.hasItemMeta())
 				continue;
 			//if(is.getItemMeta().getPersistentDataContainer().get(HEIST_ITEM, PrimitivePersistentDataType.INTEGER)==1)
 			if(is.getItemMeta().hasItemFlag(ItemFlag.HIDE_UNBREAKABLE))
-				it.remove();
+				toRm.add(is);
 		}
+		for(ItemStack is:toRm)
+			i.remove(is);
 	}
 	
 	public void startHeist(Player p, Sign s){
@@ -190,6 +193,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 		}
 		//TODO: check for weapon
 		heist=new HeistThread(p, s.getLocation(), reward);
+		p.sendMessage(__("msg_heist_start_p"));
 		for(Player cop:cops){
 			cop.sendMessage(__("msg_heist_start"));
 			giveCompass(cop);

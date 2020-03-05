@@ -5,6 +5,7 @@ locale:
   err_no_cops: §4Not enough cops online! (needed %d but only %d online)
   err_cooldown: §4You must wait %dm %ds to perform a new heist!
   msg_heist_start: §cA heist has started!
+  msg_heist_start_p: §bYou started a heist!
   msg_heist_end: §cThe heist has ended!
   msg_heist_success: §bHeist successful!
   msg_ready: Ready to raid

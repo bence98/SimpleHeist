@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Sign;
@@ -22,6 +23,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -41,6 +43,8 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	protected int nrCops;
 	/** How far you can get before the heist is cancelled? */
 	protected int radius;
+	/** How much you need to wait between heists? */
+	protected int cooldown;
 	/** Target types and rewards */
 	protected Map<String, Object> types=new HashMap<>();
 
@@ -48,6 +52,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	protected NamespacedKey HEIST_ITEM;
 	protected HeistThread heist;
 	protected int task;
+	protected Map<Location, CooldownThread> cooldowns=new HashMap<>();
 	
 	private YamlLocale i18n;
 	
@@ -65,6 +70,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 		weaponsRegistry=(List<ItemStack>) cfg.getList("weapons", Collections.emptyList());
 		nrCops=cfg.getInt("cops", 3);
 		radius=cfg.getInt("radius", 5);
+		cooldown=cfg.getInt("cooldown", 180);
 		types=cfg.getConfigurationSection("raidTypes").getValues(false);
 		try{
 			i18n=YamlLocale.getLocale(cfg.getString("lang"), this);
@@ -75,11 +81,12 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	
 	@EventHandler
 	public void onSignCreated(SignChangeEvent e){
+		if(!e.getPlayer().hasPermission("csokicraft.heist.admin"))
+			return;
 		if(!"[Heist]".equals(e.getLine(0))&&!("§2"+ChatColor.BOLD+"[Heist]").equals(e.getLine(0))&&!("§4"+ChatColor.BOLD+"[Heist]").equals(e.getLine(0)))
 			return;
 		if(types.containsKey(e.getLine(1))){
 			e.setLine(0, ("§2"+ChatColor.BOLD+"[Heist]"));
-			//TODO: cooldown display
 			e.setLine(2, __("msg_ready"));
 		}else
 			e.setLine(0, ("§4"+ChatColor.BOLD+"[Heist]"));
@@ -131,7 +138,18 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 		}
 	}
 	
-	//TODO: cooldown tick
+	@EventHandler
+	public void onBreakBlock(BlockBreakEvent e){
+		Player p=e.getPlayer();
+		Location l=e.getBlock().getLocation();
+		if(cooldowns.containsKey(l)){
+			if(p.hasPermission("csokicraft.heist.admin")){
+				cooldowns.get(l).deschedule();
+				cooldowns.remove(l);
+			}else
+				e.setCancelled(true);
+		}
+	}
 	
 	/* Game logic */
 	/** Heist compass */
@@ -177,21 +195,31 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 			getLogger().log(Level.WARNING, "No heist type: "+s.getLine(2));
 			return;
 		}
+		
 		if(p.hasPermission("csokicraft.heist.cop")){
 			p.sendMessage(__("err_cop_heist"));
 			return;
 		}
+		
 		if(heist!=null){
 			p.sendMessage(__("err_heist_exists"));
 			return;
 		}
-		//TODO: check cooldown
+		
+		//TODO: check for weapon
+		
 		List<? extends Player> cops=Bukkit.getServer().getOnlinePlayers().stream().filter((q)->{return q.hasPermission("csokicraft.heist.cop");}).collect(Collectors.toList());
 		if(cops.size()<nrCops){
 			p.sendMessage(String.format(__("err_no_cops"), nrCops, cops.size()));
 			return;
 		}
-		//TODO: check for weapon
+		
+		CooldownThread w=createCooldownWorker(s);
+		if(!w.schedule()){
+			p.sendMessage(w.formatMsg(__("err_cooldown")));
+			return;
+		}
+		
 		heist=new HeistThread(p, s.getLocation(), reward);
 		p.sendMessage(__("msg_heist_start_p"));
 		for(Player cop:cops){
@@ -213,6 +241,12 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 		heist=null;
 	}
 
+	public CooldownThread createCooldownWorker(Sign s){
+		if(!cooldowns.containsKey(s.getLocation()))
+			cooldowns.put(s.getLocation(), new CooldownThread(s, cooldown));
+		return cooldowns.get(s.getLocation());
+	}
+	
 	/* Misc functions */
 	public static SimpleHeist getInstance(){
 		return getPlugin(SimpleHeist.class);

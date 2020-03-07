@@ -18,5 +18,5 @@ permissions:
     description: Registers the player as a cop
     default: op
   csokicraft.heist.admin:
-    description: Allows administering the SimpleHeist game (i.e. stopping stuck heists, etc.)
+    description: Allows administering the SimpleHeist game (i.e. creating [Heist] signs, stopping stuck heists, etc.)
     default: op

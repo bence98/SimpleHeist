@@ -1,0 +1,17 @@
+locale:
+  err_compass_fullinv: §4Nincs hely az iránytűnek. Szabadíts fel egy slotot és használd a '/heist compass' parancsot.
+  err_cop_heist: §4Rendőrök nem rabolhatnak!
+  err_heist_exists: §4Már folyik egy rablás a szerveren!
+  err_no_cops: §4Nincs elég rendőr! (%d kell, de csak %d online)
+  err_cooldown: §4Várj %d perc %d másodpercet a következő rablásig!
+  msg_heist_start: §cEgy rablás van folyamatban!
+  msg_heist_start_p: §bElkezdted a rablást!
+  msg_heist_end: §cA rablásnak vége!
+  msg_heist_success: §bSikeres rablás!
+  msg_ready: Készen áll
+  msg_cooldown: Várj %d perc %d másodpercet
+  err_not_player: Csak játékos kaphat iránytűt!
+  err_not_cop: §4Nem vagy rendőr!
+  err_not_admin: §4Nem vagy admin!
+  desc_compass: §c/heist compass - Ad egy iránytűt (csak rendőrök)
+  desc_stop: §c/heist stop - Leállítja a rablást (csak admin)

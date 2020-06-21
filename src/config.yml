@@ -1,4 +1,7 @@
 lang: en
+cops: 3
+radius: 5
+cooldown: 180
 raidTypes:
   Shop:
     ==: csokicraft.bukkit.heist.HeistReward

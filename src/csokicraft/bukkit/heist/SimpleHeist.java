@@ -193,7 +193,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	public void startHeist(Player p, Sign s){
 		HeistReward reward=(HeistReward) types.get(s.getLine(1));
 		if(reward==null){
-			getLogger().log(Level.WARNING, "No heist type: "+s.getLine(2));
+			getLogger().log(Level.WARNING, "No heist type: "+s.getLine(1));
 			return;
 		}
 		

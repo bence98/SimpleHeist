@@ -31,6 +31,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType.PrimitivePersistentDataType;
 //import org.bukkit.persistence.PersistentDataType.PrimitivePersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -167,7 +168,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 		}
 		ItemStack compass=new ItemStack(Material.COMPASS);
 		ItemMeta meta=compass.getItemMeta();
-		//meta.getPersistentDataContainer().set(HEIST_ITEM, PrimitivePersistentDataType.INTEGER, 1);
+		meta.getPersistentDataContainer().set(HEIST_ITEM, PrimitivePersistentDataType.INTEGER, 1);
 		meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
 		compass.setItemMeta(meta);
 		i.addItem(compass);
@@ -181,7 +182,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 		for(ItemStack is:i){
 			if(is==null||!is.hasItemMeta())
 				continue;
-			//if(is.getItemMeta().getPersistentDataContainer().get(HEIST_ITEM, PrimitivePersistentDataType.INTEGER)==1)
+			if(is.getItemMeta().getPersistentDataContainer().get(HEIST_ITEM, PrimitivePersistentDataType.INTEGER)==1)
 			if(is.getItemMeta().hasItemFlag(ItemFlag.HIDE_UNBREAKABLE))
 				toRm.add(is);
 		}
@@ -259,7 +260,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 	@SuppressWarnings("deprecation")
 	private boolean isSign(Material type){
 		for(Material mat:new Material[]{
-				/*
+				//*
 				Material.ACACIA_SIGN, Material.ACACIA_WALL_SIGN,
 				Material.BIRCH_SIGN, Material.BIRCH_WALL_SIGN,
 				Material.DARK_OAK_SIGN, Material.DARK_OAK_WALL_SIGN,
@@ -268,7 +269,7 @@ public class SimpleHeist extends JavaPlugin implements Listener{
 				Material.OAK_SIGN, Material.OAK_WALL_SIGN,
 				Material.SPRUCE_SIGN, Material.SPRUCE_WALL_SIGN,
 				//*/
-				Material.SIGN, Material.SIGN_POST, Material.WALL_SIGN
+				//Material.SIGN, Material.SIGN_POST, Material.WALL_SIGN
 			})
 			if(mat.equals(type))
 				return true;
